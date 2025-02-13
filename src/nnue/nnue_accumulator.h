@@ -95,7 +95,7 @@ struct AccumulatorCaches {
 
         std::array<Entry, COLOR_NB>& operator[](int index) { return entries[index]; }
 
-        std::array<std::array<Entry, COLOR_NB>, (9 + 3) * 2 * 3> entries;
+        std::array<std::array<Entry, COLOR_NB>, (9 + 3) * 3> entries;
     };
 
     template<typename Network>

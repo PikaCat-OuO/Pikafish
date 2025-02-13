@@ -174,7 +174,7 @@ std::string trace(Position& pos, const Eval::NNUE::Network& network, Accumulator
 
     for (std::size_t bucket = 0; bucket < LayerStacks; ++bucket)
     {
-        ss << "|  " << std::left << std::setw(9) << bucket  //
+        ss << "|  " << bucket << "        "  //
            << " |  ";
         format_cp_aligned_dot(t.psqt[bucket], ss, pos);
         ss << "  "  //

@@ -51,7 +51,7 @@ static_assert(PSQTBuckets % 8 == 0,
 
 #ifdef USE_AVX512
 using vec_t      = __m512i;
-using psqt_vec_t = __m512i;
+using psqt_vec_t = __m256i;
     #define vec_load(a) _mm512_load_si512(a)
     #define vec_store(a, b) _mm512_store_si512(a, b)
     #define vec_add_16(a, b) _mm512_add_epi16(a, b)
@@ -64,17 +64,17 @@ using psqt_vec_t = __m512i;
     #define vec_slli_16(a, b) _mm512_slli_epi16(a, b)
     // Inverse permuted at load time
     #define vec_packus_16(a, b) _mm512_packus_epi16(a, b)
-    #define vec_load_psqt(a) _mm512_load_si512(a)
-    #define vec_store_psqt(a, b) _mm512_store_si512(a, b)
-    #define vec_add_psqt_32(a, b) _mm512_add_epi32(a, b)
-    #define vec_sub_psqt_32(a, b) _mm512_sub_epi32(a, b)
-    #define vec_zero_psqt() _mm512_setzero_epi32()
+    #define vec_load_psqt(a) _mm256_load_si256(a)
+    #define vec_store_psqt(a, b) _mm256_store_si256(a, b)
+    #define vec_add_psqt_32(a, b) _mm256_add_epi32(a, b)
+    #define vec_sub_psqt_32(a, b) _mm256_sub_epi32(a, b)
+    #define vec_zero_psqt() _mm256_setzero_si256()
     #define NumRegistersSIMD 16
     #define MaxChunkSize 64
 
 #elif USE_AVX512F
 using vec_t      = __m512i;
-using psqt_vec_t = __m512i;
+using psqt_vec_t = __m256i;
     #define vec_op(op, a, b) \
         __builtin_shufflevector(op(__builtin_shufflevector(a, a, 0, 1, 2, 3), \
                                    __builtin_shufflevector(b, b, 0, 1, 2, 3)), \
@@ -96,11 +96,11 @@ using psqt_vec_t = __m512i;
                                 0, 1, 2, 3, 4, 5, 6, 7)
     // Inverse permuted at load time
     #define vec_packus_16(a, b) vec_op(_mm256_packus_epi16, a, b)
-    #define vec_load_psqt(a) _mm512_load_si512(a)
-    #define vec_store_psqt(a, b) _mm512_store_si512(a, b)
-    #define vec_add_psqt_32(a, b) vec_op(_mm256_add_epi32, a, b)
-    #define vec_sub_psqt_32(a, b) vec_op(_mm256_sub_epi32, a, b)
-    #define vec_zero_psqt() _mm512_setzero_si512()
+    #define vec_load_psqt(a) _mm256_load_si256(a)
+    #define vec_store_psqt(a, b) _mm256_store_si256(a, b)
+    #define vec_add_psqt_32(a, b) _mm256_add_epi32(a, b)
+    #define vec_sub_psqt_32(a, b) _mm256_sub_epi32(a, b)
+    #define vec_zero_psqt() _mm256_setzero_si256()
     #define NumRegistersSIMD 16
     #define MaxChunkSize 64
 
@@ -530,8 +530,7 @@ class FeatureTransformer {
         const Square ksq           = pos.king_square(Perspective);
         const Square oksq          = pos.king_square(~Perspective);
         auto [king_bucket, mirror] = FeatureSet::KingBuckets[ksq][oksq];
-        auto attack_bucket         = FeatureSet::make_attack_bucket(pos, Perspective);
-        auto bucket                = king_bucket * 6 + attack_bucket;
+        auto bucket                = king_bucket * 3 + pos.count<ROOK>(Perspective);
 
         // The size must be enough to contain the largest possible update.
         // That might depend on the feature set and generally relies on the
@@ -692,14 +691,13 @@ class FeatureTransformer {
         const Square ksq           = pos.king_square(Perspective);
         const Square oksq          = pos.king_square(~Perspective);
         auto [king_bucket, mirror] = FeatureSet::KingBuckets[ksq][oksq];
-        auto attack_bucket         = FeatureSet::make_attack_bucket(pos, Perspective);
-        auto bucket                = king_bucket * 6 + attack_bucket;
+        auto bucket                = king_bucket * 3 + pos.count<ROOK>(Perspective);
 
         auto cache_index = AccumulatorCaches::KingCacheMaps[ksq];
         if (cache_index < 3 && mirror)
             cache_index += 9;
 
-        auto&                 entry = (*cache)[cache_index * 6 + attack_bucket][Perspective];
+        auto& entry = (*cache)[cache_index * 3 + pos.count<ROOK>(Perspective)][Perspective];
         FeatureSet::IndexList removed, added;
 
         for (Color c : {WHITE, BLACK})

@@ -26,17 +26,10 @@
 
 namespace Stockfish::Eval::NNUE::Features {
 
-// Get attack bucket
-IndexType HalfKAv2_hm::make_attack_bucket(const Position& pos, Color c) {
-    return AttackBucket[pos.count<ROOK>(c)][pos.count<KNIGHT>(c)][pos.count<CANNON>(c)];
-}
-
 // Get layer stack bucket
 IndexType HalfKAv2_hm::make_layer_stack_bucket(const Position& pos) {
     Color us = pos.side_to_move();
-    return LayerStackBuckets[pos.count<ROOK>(us)][pos.count<ROOK>(~us)]
-                            [pos.count<KNIGHT>(us) + pos.count<CANNON>(us)]
-                            [pos.count<KNIGHT>(~us) + pos.count<CANNON>(~us)];
+    return LayerStackBuckets[pos.count<ROOK>(us)][pos.count<ROOK>(~us)];
 }
 
 // Index of a feature for a given king position and another piece on some square

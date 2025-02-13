@@ -519,6 +519,8 @@ void Position::do_move(Move                      m,
                 st->majorMaterial[them] -= PieceValue[captured];
                 if (type_of(captured) != ROOK)
                     st->minorPieceKey ^= Zobrist::psq[captured][capsq];
+                else
+                    dp.requires_refresh[them] = true;
             }
         }
 
@@ -527,15 +529,8 @@ void Position::do_move(Move                      m,
         dp.from[1]   = capsq;
         dp.to[1]     = SQ_NONE;
 
-        auto attack_bucket_before = Eval::NNUE::FeatureSet::make_attack_bucket(*this, them);
-
         // Update board and piece lists
         remove_piece(capsq);
-
-        auto attack_bucket_after = Eval::NNUE::FeatureSet::make_attack_bucket(*this, them);
-
-        if (attack_bucket_before != attack_bucket_after)
-            dp.requires_refresh[them] = true;
 
         // Update hash key
         k ^= Zobrist::psq[captured][capsq];

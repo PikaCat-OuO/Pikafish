@@ -75,7 +75,7 @@ class HalfKAv2_hm {
     static constexpr std::uint32_t HashValue = 0xd17b100;
 
     // Number of feature dimensions
-    static constexpr IndexType Dimensions = 6 * 2 * 3 * static_cast<IndexType>(PS_NB);
+    static constexpr IndexType Dimensions = 6 * 3 * static_cast<IndexType>(PS_NB);
 
     // Get king_index and mirror information
     static constexpr auto KingBuckets = []() {
@@ -107,30 +107,6 @@ class HalfKAv2_hm {
                 v[ksq][oksq].first  = king_bucket;
                 v[ksq][oksq].second = mirror;
             }
-        return v;
-    }();
-
-    // Get attack bucket based on attack feature
-    static constexpr auto AttackBucket = []() {
-        std::array<std::array<std::array<int, 3>, 3>, 3> v{};
-        for (uint8_t rook = 0; rook <= 2; ++rook)
-            for (uint8_t knight = 0; knight <= 2; ++knight)
-                for (uint8_t cannon = 0; cannon <= 2; ++cannon)
-                    v[rook][knight][cannon] = [&] {
-                        if (rook != 0)
-                            if (knight > 0 && cannon > 0)
-                                return 0;
-                            else if (rook == 1 && knight + cannon <= 1)
-                                return 2;
-                            else
-                                return 1;
-                        else if (knight > 0 && cannon > 0)
-                            return 3;
-                        else if (knight + cannon <= 1)
-                            return 5;
-                        else
-                            return 4;
-                    }();
         return v;
     }();
 
@@ -168,35 +144,17 @@ class HalfKAv2_hm {
 
     // LayerStack buckets
     static constexpr auto LayerStackBuckets = [] {
-        std::array<std::array<std::array<std::array<uint8_t, 5>, 5>, 3>, 3> v{};
+        std::array<std::array<uint8_t, 3>, 3> v{};
+        int                                   count = 0;
         for (uint8_t us_rook = 0; us_rook <= 2; ++us_rook)
             for (uint8_t opp_rook = 0; opp_rook <= 2; ++opp_rook)
-                for (uint8_t us_knight_cannon = 0; us_knight_cannon <= 4; ++us_knight_cannon)
-                    for (uint8_t opp_knight_cannon = 0; opp_knight_cannon <= 4; ++opp_knight_cannon)
-                        v[us_rook][opp_rook][us_knight_cannon][opp_knight_cannon] = [&] {
-                            if (us_rook == opp_rook)
-                                return us_rook * 4
-                                     + int(us_knight_cannon + opp_knight_cannon >= 4) * 2
-                                     + int(us_knight_cannon == opp_knight_cannon);
-                            else if (us_rook == 2 && opp_rook == 1)
-                                return 12;
-                            else if (us_rook == 1 && opp_rook == 2)
-                                return 13;
-                            else if (us_rook > 0 && opp_rook == 0)
-                                return 14;
-                            else if (us_rook == 0 && opp_rook > 0)
-                                return 15;
-                            return -1;
-                        }();
+                v[us_rook][opp_rook] = us_rook == opp_rook && us_rook ? 0 : ++count;
         return v;
     }();
 
     // Maximum number of simultaneously active features.
     static constexpr IndexType MaxActiveDimensions = 32;
     using IndexList                                = ValueList<IndexType, MaxActiveDimensions>;
-
-    // Get attack bucket
-    static IndexType make_attack_bucket(const Position& pos, Color c);
 
     // Get layer stack bucket
     static IndexType make_layer_stack_bucket(const Position& pos);
